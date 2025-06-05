@@ -1,3 +1,7 @@
+@{
+
+	Layout = "~/Views/Shared/_Layout.cshtml";
+}
 @model List<PDFManagementApp.Models.Document>
 	<div class="bg-white p-6 rounded-lg shadow-md">
 		<h2 class="text-2xl font-bold mb-4">Documents</h2>
@@ -8,6 +12,7 @@
 					<th class="p-2">File Name</th>
 					<th class="p-2">Size (bytes)</th>
 					<th class="p-2">Upload Date</th>
+					<th class="p-2">Upload by</th>
 					<th class="p-2">Actions</th>
 				</tr>
 			</thead>
@@ -18,6 +23,7 @@
 					<td class="p-2 border">@doc.FileName</td>
 					<td class="p-2 border">@doc.FileSize</td>
 					<td class="p-2 border">@doc.UploadDate</td>
+					<td class="p-2 border">@doc.UploadedBy</td>
 					<td class="p-2 border">
 						<a href="/Document/View/@doc.Id" class="text-blue-600">View</a>
 						<form method="post" action="/Document/Download/@doc.Id" class="inline">

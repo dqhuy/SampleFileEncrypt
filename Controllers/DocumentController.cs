@@ -27,7 +27,7 @@ namespace PDFManagementApp.Controllers
         {
             var user = User.Identity.Name;
             var documents = await _context.Documents
-                .Where(d => d.UploadedBy == user)
+              //  .Where(d => d.UploadedBy == user)
                 .ToListAsync();
             return View(documents);
         }
