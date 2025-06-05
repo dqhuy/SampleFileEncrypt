@@ -1,0 +1,23 @@
+@{
+
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@model dynamic
+<div class="max-w-md mx-auto bg-white p-6 rounded-lg shadow-md">
+    <h2 class="text-2xl font-bold mb-4">Login</h2>
+    @if (ViewBag.Error != null)
+    {
+        <div class="text-red-500 mb-4">@ViewBag.Error</div>
+    }
+    <form method="post" action="/Account/Login">
+        <div class="mb-4">
+            <label class="block text-gray-700">Username</label>
+            <input type="text" name="username" class="w-full p-2 border rounded" required>
+        </div>
+        <div class="mb-4">
+            <label class="block text-gray-700">Password</label>
+            <input type="password" name="password" class="w-full p-2 border rounded" required>
+        </div>
+        <button type="submit" class="bg-blue-600 text-white p-2 rounded w-full">Login</button>
+    </form>
+</div>

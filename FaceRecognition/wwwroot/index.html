@@ -1,0 +1,66 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center h-screen">
+    <div class="bg-white p-6 rounded shadow-md">
+        <h1 class="text-2xl font-bold mb-4">Face Recognition Login</h1>
+        <video id="webcam" autoplay class="w-full mb-4"></video>
+        <button id="capture" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Capture & Login</button>
+        <p id="result" class="mt-4"></p>
+    </div>
+
+    <script>
+        const video = document.getElementById('webcam');
+        const captureButton = document.getElementById('capture');
+        const result = document.getElementById('result');
+        let stream;
+
+        async function startWebcam() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+            } catch (err) {
+                result.textContent = 'Error accessing webcam: ' + err.message;
+            }
+        }
+
+        captureButton.addEventListener('click', async () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            const base64Image = canvas.toDataURL('image/jpeg').split(',')[1];
+            result.classList.remove("text-green-500");
+            result.classList.remove("text-red-500");
+            result.textContent = "Đang xác thực....";
+
+            try {
+                const response = await fetch('/api/faceauth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ Base64Image: base64Image })
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    result.textContent = `Login successful! User: ${data.userId} (Confidence: ${(data.confidence * 100).toFixed(2)}%)`;
+                    result.classList.add('text-green-500');
+                } else {
+                    result.textContent = data.Message || 'Login failed';
+                    result.classList.add('text-red-500');
+                }
+            } catch (err) {
+                result.textContent = 'Error: ' + err.message;
+                result.classList.add('text-red-500');
+            }
+        });
+
+        window.onload = startWebcam;
+    </script>
+</body>
+</html>

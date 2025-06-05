@@ -1,0 +1,13 @@
+@{
+
+	Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div class="text-center">
+	<h1 class="text-3xl font-bold mb-4">Welcome to PDF Management App</h1>
+	<p class="mb-4">Manage your PDF documents securely with encryption.</p>
+	@if (!User.Identity.IsAuthenticated)
+	{
+	<a href="/Account/Login" class="bg-blue-600 text-white p-2 rounded">Login</a>
+	<a href="/Account/Register" class="bg-green-600 text-white p-2 rounded">Register</a>
+	}
+</div>
