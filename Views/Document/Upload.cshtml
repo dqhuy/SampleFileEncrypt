@@ -1,0 +1,19 @@
+@model dynamic
+<div class="max-w-md mx-auto bg-white p-6 rounded-lg shadow-md">
+	<h2 class="text-2xl font-bold mb-4">Upload Document</h2>
+	@if (ViewBag.Error != null)
+	{
+	<div class="text-red-500 mb-4">@ViewBag.Error</div>
+	}
+	<form method="post" action="/Document/Upload" enctype="multipart/form-data">
+		<div class="mb-4">
+			<label class="block text-gray-700">Select PDF File</label>
+			<input type="file" name="file" accept=".pdf" class="w-full p-2 border rounded" required="">
+        </div>
+		<div class="mb-4">
+			<label class="block text-gray-700">Encryption Key</label>
+			<input type="text" name="encryptionKey" class="w-full p-2 border rounded" required="">
+        </div>
+		<button type="submit" class="bg-blue-600 text-white p-2 rounded w-full">Upload</button>
+	</form>
+</div>
