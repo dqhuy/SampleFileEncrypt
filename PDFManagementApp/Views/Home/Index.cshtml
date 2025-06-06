@@ -1,13 +1,21 @@
-@{
+﻿@{
 
 	Layout = "~/Views/Shared/_Layout.cshtml";
 }
 <div class="text-center">
-	<h1 class="text-3xl font-bold mb-4">Welcome to PDF Management App</h1>
-	<p class="mb-4">Manage your PDF documents securely with encryption.</p>
+	<h1 class="text-3xl font-bold mb-4">HỆ THỐNG QUẢN LÝ KHO LƯU TRỮ TÀI LIỆU</h1>
+	<p class="mb-4">Quản lý lưu trữ tài liệu PDF của bạn với công nghệ mã hóa.</p>
 	@if (!User.Identity.IsAuthenticated)
 	{
-	<a href="/Account/Login" class="bg-blue-600 text-white p-2 rounded">Login</a>
-	<a href="/Account/Register" class="bg-green-600 text-white p-2 rounded">Register</a>
+        @* <a href="/Account/Login"
+           class="bg-green-500 hover:bg-green-700 px-3 py-1 rounded-md transition duration-300 flex items-center gap-2">
+            <i class="fas fa-sign-in-alt"></i>
+            Đăng nhập
+        </a>
+        <a href="/Account/Register"
+           class="bg-blue-500 hover:bg-blue-700 px-3 py-1 rounded-md transition duration-300 flex items-center gap-2">
+            <i class="fas fa-user-plus"></i>
+            Đăng ký
+        </a> *@
 	}
 </div>

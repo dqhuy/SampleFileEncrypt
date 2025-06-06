@@ -8,7 +8,8 @@ using PDFManagementApp.Models;
 using PDFManagementApp.Services;
 using Microsoft.Data.Sqlite;
 using Ce.Interaction.Lib.HttpClientAccessors.Interfaces;
-using Ce.Interaction.Lib.HttpClientAccessors.Implementations; // Add this using directive
+using Ce.Interaction.Lib.HttpClientAccessors.Implementations;
+using PDFManagementApp.Services.Interface; // Add this using directive
 namespace PDFManagementApp
 {
     public class Startup
@@ -35,9 +36,9 @@ namespace PDFManagementApp
             services.AddAuthorization();
             services.AddControllersWithViews();
             services.AddScoped<EncryptionService>();
-            //services.AddHttpClient<IBaseHttpClient, BaseHttpClient>();
-            //services.AddSingleton<IBaseHttpClientFactory, BaseHttpClientFactory>();
-            //services.AddSingleton<IFaceAuthenticatorClientService, FaceAuthenticatorClientService>();
+            services.AddHttpClient<IBaseHttpClient, BaseHttpClient>();
+            services.AddSingleton<IBaseHttpClientFactory, BaseHttpClientFactory>();
+            services.AddSingleton<IFaceAuthenticatorClientService, FaceAuthenticatorClientService>();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)

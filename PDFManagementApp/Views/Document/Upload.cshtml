@@ -1,23 +1,33 @@
-@{
+﻿@{
 
 	Layout = "~/Views/Shared/_Layout.cshtml";
 }
 @model dynamic
 <div class="max-w-md mx-auto bg-white p-6 rounded-lg shadow-md">
-	<h2 class="text-2xl font-bold mb-4">Upload Document</h2>
-	@if (ViewBag.Error != null)
-	{
-	<div class="text-red-500 mb-4">@ViewBag.Error</div>
-	}
-	<form method="post" action="/Document/Upload" enctype="multipart/form-data">
-		<div class="mb-4">
-			<label class="block text-gray-700">Select PDF File</label>
-			<input type="file" name="file" accept=".pdf" class="w-full p-2 border rounded" required="">
+    <h2 class="text-2xl font-bold mb-4 text-blue-600 flex items-center gap-2">
+        <i class="fas fa-upload"></i>
+        Upload Tài liệu
+    </h2>
+
+    @if (ViewBag.Error != null)
+    {
+        <div class="text-red-500 bg-red-100 p-2 rounded mb-4 flex items-center gap-2">
+            <i class="fas fa-exclamation-triangle"></i>
+            @ViewBag.Error
         </div>
-		<div class="mb-4">
-			<label class="block text-gray-700">Encryption Key</label>
-			<input type="text" name="encryptionKey" class="w-full p-2 border rounded" required="">
+    }
+
+    <form method="post" action="/Document/Upload" enctype="multipart/form-data" class="flex flex-col gap-4">
+        <div>
+            <label class="block text-gray-700 font-semibold mb-1">Chọn File PDF</label>
+            <input type="file" name="file" accept=".pdf"
+                   class="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 transition" required />
         </div>
-		<button type="submit" class="bg-blue-600 text-white p-2 rounded w-full">Upload</button>
-	</form>
+        <input hidden type="text" name="encryptionKey" value="@ViewBag.EncryptionKey" class="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+        <button type="submit"
+                class="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold p-3 rounded shadow transition duration-300 ease-in-out">
+            <i class="fas fa-cloud-upload-alt"></i>
+            Upload
+        </button>
+    </form>
 </div>

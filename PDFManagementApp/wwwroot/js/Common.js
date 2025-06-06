@@ -107,37 +107,54 @@ var CommonJs = {
     },
     //https://sweetalert2.github.io/
     ShowErrMsg: function (msgContent) {
-        $(document).Toasts('create', {
-            class: 'bg-danger',
-            autohide: true,//res.type === "Success",
-            delay: 5000,
-            position: 'bottomRight',
-            title: "Thông báo",
-            body: msgContent
+        Swal.fire({
+            icon: 'error',
+            title: 'Thông báo',
+            text: msgContent,
+            timer: 5000,
+            showConfirmButton: false,
+            position: 'bottom-end',
+            toast: true, 
+            showCloseButton: true
         });
     },
+
     ShowNotifyMsg: function (res) {
-        let bgClass = "bg-info";
-        let msgContent = "";
-        if (res != undefined) {
+        let icon = 'info';
+        let msgContent = '';
+        let bgColor = '#3498db';
+
+        if (res !== undefined) {
             if (res.success) {
-                bgClass = 'bg-success';
-                msgContent = res.message ?? LocalizerSource.Success;
-            } else if (!res.success) {
-                bgClass = 'bg-danger';
-                msgContent = res.message ?? LocalizerSource.Fail;
+                icon = 'success';
+                msgContent = res.message ?? 'Thành công';
+                bgColor = '#28a745'; // xanh lá
+            } else {
+                icon = 'error';
+                msgContent = res.message ?? 'Thất bại';
+                bgColor = '#dc3545'; // đỏ
             }
-            $(document).Toasts('create', {
-                class: bgClass,
-                autohide: true,
-                delay: 5000,
-                position: 'bottomRight',
-                title: LocalizerSource.Notify,
-                body: msgContent
+
+            Swal.fire({
+                icon: icon,
+                title: 'Thông báo',
+                text: msgContent,
+                timer: 3000,
+                showConfirmButton: false,
+                position: 'bottom-end',
+                toast: true,
+                showCloseButton: true,
+                background: bgColor,
+                color: '#fff',
+                customClass: {
+                    popup: 'colored-toast'
+                }
             });
         }
         return false;
     },
+
+
     /**
      * Showing Sweetalert
      * @param {string} title Title of message box
@@ -157,8 +174,8 @@ var CommonJs = {
             focusConfirm: false,
             focusCancel: true,
             showCloseButton: true,
-            confirmButtonText: '<i class="fas fa-fw fa-trash-alt"></i>' + (confirmText || LocalizerSource.Delete),
-            cancelButtonText: '<i class="fas fa-fw fa-times"></i>' + (cancelText || LocalizerSource.Close),
+            confirmButtonText: '<i class="fas fa-fw fa-trash-alt"></i>' + (confirmText || "Xóa"),
+            cancelButtonText: '<i class="fas fa-fw fa-times"></i>' + (cancelText || "Đóng"),
             customClass: {
                 confirmButton: 'btn btn-basic btn-delete m-1',
                 cancelButton: 'btn btn-basic btn-close m-1',
@@ -184,8 +201,8 @@ var CommonJs = {
             focusConfirm: false,
             focusCancel: true,
             showCloseButton: true,
-            confirmButtonText: '<i class="fas fa-fw fa-check"></i>' + (confirmText || LocalizerSource.Agree),
-            cancelButtonText: '<i class="fas fa-fw fa-times"></i>' + (cancelText || LocalizerSource.Close),
+            confirmButtonText: '<i class="fas fa-fw fa-check"></i>' + (confirmText || "Đồng ý"),
+            cancelButtonText: '<i class="fas fa-fw fa-times"></i>' + (cancelText || "Đóng"),
             customClass: {
                 confirmButton: 'btn btn-basic btn-save m-1',
                 cancelButton: 'btn btn-basic btn-close m-1',
@@ -210,8 +227,8 @@ var CommonJs = {
             focusConfirm: false,
             focusCancel: true,
             showCloseButton: true,
-            confirmButtonText: '<i class="fas fa-fw fa-check"></i>' + (confirmText || LocalizerSource.Agree),
-            cancelButtonText: '<i class="fas fa-fw fa-times"></i>' + (cancelText || LocalizerSource.Close),
+            confirmButtonText: '<i class="fas fa-fw fa-check"></i>' + (confirmText || "Đồng ý"),
+            cancelButtonText: '<i class="fas fa-fw fa-times"></i>' + (cancelText || "Đóng"),
             customClass: {
                 confirmButton: 'btn btn-basic btn-save m-1',
                 cancelButton: 'btn btn-basic btn-close m-1',
@@ -248,8 +265,8 @@ var CommonJs = {
             focusConfirm: false,
             focusCancel: true,
             showCloseButton: true,
-            confirmButtonText: '<i class="fas fa-fw fa-check"></i>' + (confirmText || LocalizerSource.Agree),
-            cancelButtonText: '<i class="fas fa-fw fa-times"></i>' + (cancelText || LocalizerSource.Close),
+            confirmButtonText: '<i class="fas fa-fw fa-check"></i>' + (confirmText || "Đồng ý"),
+            cancelButtonText: '<i class="fas fa-fw fa-times"></i>' + (cancelText || "Đóng"),
             customClass: {
                 confirmButton: 'btn btn-basic btn-save m-1',
                 cancelButton: 'btn btn-basic btn-close m-1',
@@ -3382,13 +3399,17 @@ var CommonJs = {
      * @param {object} container jQuery Element
      */
     lazyload: function (container) {
-        //default container for backdrop
         container = container || $('.content-wrapper');
-        //backdrop template
-        var template = $('<div />', { id: 'loader-wrapper', class: 'lazyload-overlay preloader' }).append($('<div />', { id: 'loader' }));
+
+        var overlay = document.getElementById('loadingOverlay');
+
         return {
-            show: function () { container.append(template) },
-            hide: function () { template.remove() }
+            show: function () {
+                overlay.classList.remove('hidden');
+            },
+            hide: function () {
+                overlay.classList.add('hidden');
+            }
         };
     },
     UpdateQueryStringParameter: function (uri, key, value) {

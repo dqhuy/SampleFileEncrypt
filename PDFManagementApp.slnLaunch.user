@@ -1,0 +1,17 @@
+[
+  {
+    "Name": "New Profile",
+    "Projects": [
+      {
+        "Path": "PDFManagementApp\\PDFManagementApp.csproj",
+        "Action": "Start",
+        "DebugTarget": "PDFManagementApp"
+      },
+      {
+        "Path": "FaceRecognition\\FaceRecognition.csproj",
+        "Action": "Start",
+        "DebugTarget": "FaceRecognition"
+      }
+    ]
+  }
+]

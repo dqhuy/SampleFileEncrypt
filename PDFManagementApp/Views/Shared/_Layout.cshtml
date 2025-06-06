@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -6,25 +6,65 @@
     <title>PDF Management App</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <!-- Sweet Alert 2-->
-    <link rel="stylesheet" href="~/lib/sweetalert2-theme-bootstrap-4/bootstrap-4.min.css" />
+    @* <link rel="stylesheet" href="~/lib/sweetalert2-theme-bootstrap-4/bootstrap-4.min.css" /> *@
     <link href="/css/site.css" rel="stylesheet">
+    <!-- Font Awesome CDN-->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.22.0/dist/sweetalert2.min.css">
     <script src="~/js/jquery/jquery.min.js"></script>
+    <style>
+        #loadingOverlay {
+            transition: opacity 0.3s ease-in-out;
+        }
+    </style>
 </head>
 <body class="bg-gray-100">
-    <nav class="bg-blue-600 text-white p-4">
-        <div class="container mx-auto flex justify-between">
-            <a href="/" class="text-xl font-bold">PDF Management</a>
-            <div>
+
+    <nav class="bg-blue-600 text-white p-4 shadow-md">
+        <div class="container mx-auto flex justify-between items-center">
+            <a href="/" class="text-2xl font-bold hover:text-yellow-300 transition duration-300 flex items-center gap-2">
+                <i class="fas fa-file-pdf"></i>
+                PDF Management
+            </a>
+            <div class="flex space-x-4 items-center">
                 @if (User.Identity.IsAuthenticated)
                 {
-                <a href="/Document/Index" class="mr-4">Documents</a>
-                <a href="/Account/Manage" class="mr-4">Manage Users</a>
-                <a href="/Account/Logout">Logout</a>
+                    <div class="text-white mr-4">
+                        Chào, <b> @User.Identity.Name</b>
+                    </div>
+                    <a href="/Document/Index"
+                       class="bg-blue-500 hover:bg-blue-700 px-3 py-1 rounded-md transition duration-300 flex items-center gap-2">
+                        <i class="fas fa-folder-open"></i>
+                        Quản lý tài liệu
+                    </a>
+                    <a data-url="/Account/FaceTrain" data-user-name="@User.Identity.Name"
+                       class="faceRegisterButton bg-blue-500 hover:bg-blue-700 px-3 py-1 rounded-md transition duration-300 flex items-center gap-2">
+                        <img class="icon" width="24" src="~/faceid.png" alt="FaceID" />
+                        Đăng ký khuôn mặt
+                    </a>
+                    <a href="/Account/Manage"
+                       class="bg-blue-500 hover:bg-blue-700 px-3 py-1 rounded-md transition duration-300 flex items-center gap-2">
+                        <i class="fas fa-users-cog"></i>
+                       Quản lý người dùng
+                    </a>
+                    <a href="/Account/Logout"
+                       class="bg-red-500 hover:bg-red-700 px-3 py-1 rounded-md transition duration-300 flex items-center gap-2">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Đăng xuất
+                    </a>
                 }
                 else
                 {
-                <a href="/Account/Login" class="mr-4">Login</a>
-                <a href="/Account/Register">Register</a>
+                    <a href="/Account/Login"
+                       class="bg-green-500 hover:bg-green-700 px-3 py-1 rounded-md transition duration-300 flex items-center gap-2">
+                        <i class="fas fa-sign-in-alt"></i>
+                        Đăng nhập
+                    </a>
+                    <a href="/Account/Register"
+                       class="bg-blue-500 hover:bg-blue-700 px-3 py-1 rounded-md transition duration-300 flex items-center gap-2">
+                        <i class="fas fa-user-plus"></i>
+                        Đăng ký
+                    </a>
                 }
             </div>
         </div>
@@ -32,10 +72,211 @@
     <div class="container mx-auto p-4">
         @RenderBody()
     </div>
-    <script src="~/lib/sweetalert2/sweetalert2.min.js"></script>
+    <div id="loadingOverlay" class="hidden fixed inset-0 bg-white bg-opacity-80 flex items-center justify-center z-50">
+        <i class="fas fa-spinner fa-spin fa-3x text-blue-600"></i>
+    </div>
+    
+    @* <script src="~/lib/sweetalert2/sweetalert2.min.js"></script> *@
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.22.0/dist/sweetalert2.all.min.js"></script>
     <script src="~/js/Common.js" asp-append-version="true"></script>
     <script type="text/javascript">
+        const overlay = document.getElementById('loadingOverlay');
+
+        document.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', (e) => {
+                if (link.getAttribute('target') !== '_blank' &&
+                    link.getAttribute('href') !== '#' &&
+                    link.getAttribute('href') !== 'javascript:void(0)') {
+
+                    overlay.classList.remove('hidden');
+
+                    setTimeout(() => {
+                        overlay.classList.add('hidden');
+                    }, 1000);
+                }
+            });
+        });
         InitCommonJs();
+
+        jQuery(document).on("click", ".faceRegisterButton", function () {
+            var self = $(this);
+            var form = self.closest("form");
+
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(function (stream) {
+                    var $video = $('<video autoplay></video>').css({
+                        width: '100%',
+                        borderRadius: '8px',
+                        marginBottom: '10px'
+                    });
+                    $video[0].srcObject = stream;
+
+                    var $popup = $('<div class="dragover"></div>').addClass('camera-popup')
+                        .css({
+                            overflow: 'hidden',
+                            position: 'fixed',
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            zIndex: '9999',
+                            backgroundColor: '#fff',
+                            padding: '10px',
+                            borderRadius: '8px',
+                            boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
+                            textAlign: 'center',
+                            cursor: 'move'
+                        });
+
+                    var $label = $('<label>Hệ thống sẽ chụp ảnh sau khoảng 3s</label>').css({
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                    });
+
+                    var $contentWrapper = $('<div></div>').css({
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                    });
+
+                    var $closeButton = $('<button class="btn btn-primary btn-basic">Đóng</button>').css({
+                        fontSize: '16px',
+                        marginTop: '10px'
+                    }).click(function () {
+                        $popup.remove();
+                        stream.getTracks().forEach(track => track.stop());
+                    });
+
+                    // Nhấn esc để đóng popup
+                    $(document).on('keydown', function (e) {
+                        if (e.key === 'Escape') {
+                            $popup.remove();
+                            stream.getTracks().forEach(track => track.stop());
+                            $(document).off('keydown');
+                        }
+                    });
+
+                    // Drag functionality
+                    var isDragging = false;
+                    var offset = { x: 0, y: 0 };
+
+                    $popup.on('mousedown', function (e) {
+                        isDragging = true;
+                        offset.x = e.clientX - $popup.offset().left;
+                        offset.y = e.clientY - $popup.offset().top;
+                        $(document).on('mousemove', onMouseMove);
+                        $(document).on('mouseup', onMouseUp);
+                        e.preventDefault();
+                    });
+
+                    function onMouseMove(e) {
+                        if (isDragging) {
+                            $popup.css({
+                                top: e.clientY - offset.y,
+                                left: e.clientX - offset.x,
+                                transform: 'none'
+                            });
+                        }
+                    }
+
+                    function onMouseUp() {
+                        isDragging = false;
+                        $(document).off('mousemove', onMouseMove);
+                        $(document).off('mouseup', onMouseUp);
+                    }
+
+                    $contentWrapper.append($video).append($closeButton);
+                    $popup.append($label).append($contentWrapper);
+
+                    $('body').append($popup);
+                    var sl = 0;
+                    var intervalId = setInterval(function () {
+                        var canvas = document.createElement("canvas");
+                        canvas.width = $video[0].videoWidth;
+                        canvas.height = $video[0].videoHeight;
+                        canvas.getContext("2d").drawImage($video[0], 0, 0, canvas.width, canvas.height);
+
+                        canvas.toBlob(function (blob) {
+                            const overlay = document.getElementById('loadingOverlay');
+                            overlay.classList.remove('hidden');
+
+                            var file = new File([blob], "profile_picture.jpg", { type: 'image/jpg' });
+                            let userName = self.attr("data-user-name");
+                            var formData = new FormData();
+                            formData.append('File', blob, "profile_picture_" + sl + ".jpg");
+                            formData.append('UserName', userName);
+                            $.ajax({
+                                url: '/Account/RegisterImageForFaceRecogize',
+                                type: 'POST',
+                                data: formData,
+                                processData: false,
+                                contentType: false,
+                                success: function (response) {
+                                    let data = CommonJs.GetSerialize(form); //trimspace
+                                    let url = self.attr("data-url");
+
+                                    let dataType = "json";
+                                    let ssCallBack = function (res) {
+                                        if (res.redirectUrl) {
+                                            let responseData = {
+                                                success: true,
+                                                message: 'Đăng nhập thành công!'
+                                            };
+                                            setInterval(function () {
+                                                CommonJs.SetMessage(responseData, true, true);
+                                            }, 2000);
+                                            
+                                            window.location.href = res.redirectUrl;
+                                            return false;
+                                        }
+                                        if (res.success) {
+                                            if (res.data === null || res.data === false) {
+                                                $(".faceRegisterButton").prop({ disabled: false });
+                                                res.success = false;
+                                                CommonJs.SetMessage(res, true, true);
+                                            } else {
+                                                CommonJs.SetMessage(res, true, true);
+                                            }
+                                        } else if (res.type === "Redirect") { //type là redirect
+                                            window.location.href = res.message;
+                                        } else { // thất bại
+                                            $(".faceRegisterButton").prop({ disabled: false });
+                                            CommonJs.SetMessage(res, true, true);
+                                        }
+                                    }
+                                    //todo : handle with errCallback
+                                    let errCallback = function () {
+                                        $(".faceRegisterButton").prop({ disabled: false });
+                                        return false;
+                                    }
+
+                                    CommonJs.CustAjaxCall(data, "POST", url, dataType, ssCallBack, errCallback);
+                                    return false;
+                                },
+                                error: function (xhr, status, error) {
+                                    console.error("Lỗi khi tải lên hình ảnh:", error);
+                                },
+                                finally: function (){
+                                    overlay.classList.add('hidden');
+                                }
+                            });
+                        }, 'image/png');
+
+                        sl++;
+
+                        if (sl == 1) {
+                            $popup.remove();
+                            stream.getTracks().forEach(track => track.stop());
+                            clearInterval(intervalId);
+                        }
+                    }, 3000);
+                })
+                .catch(function (error) {
+                    console.error("Không thể truy cập vào camera:", error);
+                    CommonJs.SetMessage("Không thể truy cập vào camera.", true);
+
+                });
+        });
     </script>
 </body>
 </html>

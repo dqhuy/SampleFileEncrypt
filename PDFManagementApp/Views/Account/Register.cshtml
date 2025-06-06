@@ -4,20 +4,36 @@
 }
 
 <div class="max-w-md mx-auto bg-white p-6 rounded-lg shadow-md">
-    <h2 class="text-2xl font-bold mb-4">Register</h2>
-    <form method="post" action="/Account/Register">
-        <div class="mb-4">
-            <label class="block text-gray-700">Username</label>
-            <input type="text" name="username" class="w-full p-2 border rounded" required>
+    <h2 class="text-2xl font-bold mb-4 text-blue-600 flex items-center gap-2">
+        <i class="fas fa-user-plus"></i>
+        Register
+    </h2>
+    <form method="post" action="/Account/Register" class="space-y-4">
+        <div>
+            <label class="block text-gray-700 font-medium mb-1">
+                <i class="fas fa-user"></i> Username
+            </label>
+            <input type="text" name="username" class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 transition" required>
         </div>
-        <div class="mb-4">
-            <label class="block text-gray-700">Password</label>
-            <input type="password" name="password" class="w-full p-2 border rounded" required>
+
+        <div>
+            <label class="block text-gray-700 font-medium mb-1">
+                <i class="fas fa-lock"></i> Password
+            </label>
+            <input type="password" name="password" class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 transition" required>
         </div>
-        <div class="mb-4">
-            <label class="block text-gray-700">Encryption Key</label>
-            <input type="text" name="encryptionKey" class="w-full p-2 border rounded" required>
+
+        <div>
+            <label class="block text-gray-700 font-medium mb-1">
+                <i class="fas fa-key"></i> Encryption Key
+            </label>
+            <input type="text" name="encryptionKey" class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 transition" required>
         </div>
-        <button type="submit" class="bg-blue-600 text-white p-2 rounded w-full">Register</button>
+
+        <button type="submit"
+                class="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded shadow transition w-full">
+            <i class="fas fa-user-plus"></i>
+            Register
+        </button>
     </form>
 </div>

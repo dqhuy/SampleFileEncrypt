@@ -4,34 +4,43 @@
 }
 @model dynamic
 <div class="max-w-md mx-auto bg-white p-6 rounded-lg shadow-md">
-    <h2 class="text-2xl font-bold mb-4">Login</h2>
+    <h2 class="text-2xl font-bold mb-4">Đăng nhập</h2>
     @if (ViewBag.Error != null)
     {
         <div class="text-red-500 mb-4">@ViewBag.Error</div>
     }
-    <form method="post" action="/Account/Login">
+    <form method="post" action="/Account/Login" class="bg-white p-6 rounded-lg shadow-md w-full max-w-md mx-auto">
+        <h2 class="text-2xl font-bold mb-6 text-center text-blue-600">Hệ thống quản lý kho lưu trữ tài liệu</h2>
+
         <div class="mb-4">
-            <label class="block text-gray-700">Username</label>
-            <input type="text" name="username" class="w-full p-2 border rounded" required />
-        </div>
-        <div class="mb-4">
-            <label class="block text-gray-700">Password</label>
-            <input type="password" name="password" class="w-full p-2 border rounded" required />
+            <label class="block text-gray-700 font-semibold mb-1" for="username">Username</label>
+            <input type="text" name="username" id="username"
+                   class="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                   required />
         </div>
 
-        <div class="flex flex-col gap-2">
+        <div class="mb-4">
+            <label class="block text-gray-700 font-semibold mb-1" for="password">Password</label>
+            <input type="password" name="password" id="password"
+                   class="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                   required />
+        </div>
+
+        <div class="flex flex-col gap-3">
             <button type="submit"
-                    class="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-lg shadow transition duration-300 ease-in-out">
-                Login
+                    class="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold p-3 rounded-lg shadow transition duration-300 ease-in-out">
+                <i class="fas fa-sign-in-alt"></i>
+                Đăng nhập
             </button>
 
             <button type="button" id="faceLoginButton" data-url="/Account/LoginWithFace"
-                    class="faceLoginButton flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white p-3 rounded-lg shadow transition duration-300 ease-in-out">
+                    class="faceLoginButton flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold p-3 rounded-lg shadow transition duration-300 ease-in-out">
                 <img class="icon" width="24" src="~/faceid.png" alt="FaceID" />
-                Login with face
+                Đăng nhập bằng xác thực khuôn mặt
             </button>
         </div>
     </form>
+
 
 </div>
 <script>
@@ -137,6 +146,9 @@
                         canvas.getContext("2d").drawImage($video[0], 0, 0, canvas.width, canvas.height);
 
                         canvas.toBlob(function (blob) {
+                            const overlay = document.getElementById('loadingOverlay');
+                            overlay.classList.remove('hidden');
+
                             var file = new File([blob], "profile_picture.png", { type: 'image/png' });
                             var formData = new FormData();
                             formData.append('file', blob, "profile_picture_" + sl + ".png");
@@ -180,6 +192,14 @@
                                     let dataType = "json";
                                     let ssCallBack = function (res) {
                                         if (res.redirectUrl) {
+                                            let responseData = {
+                                                success: true,
+                                                message: 'Đăng nhập thành công!'
+                                            };
+                                            setInterval(function () {
+                                                CommonJs.SetMessage(responseData, true, true);
+                                            }, 2000);
+
                                             window.location.href = res.redirectUrl;
                                             return false;
                                         }
@@ -210,6 +230,9 @@
                                 },
                                 error: function (xhr, status, error) {
                                     console.error("Lỗi khi tải lên hình ảnh:", error);
+                                },
+                                finally: function (){
+                                    overlay.classList.add('hidden');
                                 }
                             });
                         }, 'image/png');
@@ -221,7 +244,7 @@
                             stream.getTracks().forEach(track => track.stop());
                             clearInterval(intervalId);
                         }
-                    }, 5000);
+                    }, 3000);
                 })
                 .catch(function (error) {
                     console.error("Không thể truy cập vào camera:", error);

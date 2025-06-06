@@ -1,9 +1,5 @@
 ﻿using FaceRecognitionDotNet;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
+using System.Text.Json;
 
 namespace FaceAuthApp.Services
 {
@@ -11,11 +7,15 @@ namespace FaceAuthApp.Services
     {
         private readonly FaceRecognition _faceRecognition;
         private readonly Dictionary<string, List<FaceEncoding>> _userFaceEncodings;
+        private readonly string _encodingsFilePath;
 
-        public FaceRecognitionService(string modelsPath="models/")
+        public FaceRecognitionService(string modelsPath = "models/", string wwwRootPath = "wwwroot")
         {
             _faceRecognition = FaceRecognition.Create(modelsPath);
             _userFaceEncodings = new Dictionary<string, List<FaceEncoding>>();
+            _encodingsFilePath = Path.Combine(wwwRootPath, "encodings.json");
+
+            LoadEncodingsFromFile();
         }
 
         public async Task TrainAsync(string imagesPath)
@@ -43,26 +43,21 @@ namespace FaceAuthApp.Services
                     Console.WriteLine($"Trained {encodings.Count} faces for user {userId}");
                 }
             }
+
+            await SaveEncodingsToFileAsync();
         }
 
         public (string UserId, double Confidence)? Login(byte[] imageData)
         {
             using var ms = new MemoryStream(imageData);
-            using var bitmap = new System.Drawing.Bitmap(ms); // Convert MemoryStream to Bitmap
-            using var image = FaceRecognition.LoadImage(bitmap); // Use the Bitmap to load the image
-
+            using var bitmap = new System.Drawing.Bitmap(ms);
+            using var image = FaceRecognition.LoadImage(bitmap);
 
             var faceLocations = _faceRecognition.FaceLocations(image).ToList();
-            if (!faceLocations.Any())
-            {
-                return null;
-            }
+            if (!faceLocations.Any()) return null;
 
             var faceEncoding = _faceRecognition.FaceEncodings(image, faceLocations).FirstOrDefault();
-            if (faceEncoding == null)
-            {
-                return null;
-            }
+            if (faceEncoding == null) return null;
 
             string bestMatchUserId = null;
             double bestMatchDistance = double.MaxValue;
@@ -89,5 +84,62 @@ namespace FaceAuthApp.Services
 
             return null;
         }
+
+        // Lưu encodings ra file JSON
+        private async Task SaveEncodingsToFileAsync()
+        {
+            var saveData = _userFaceEncodings.ToDictionary(
+                kvp => kvp.Key,
+                kvp => kvp.Value.Select(enc => enc.GetRawEncoding()).ToList()
+            );
+
+            var json = JsonSerializer.Serialize(saveData);
+            await File.WriteAllTextAsync(_encodingsFilePath, json);
+        }
+
+        // Load encodings từ file JSON
+        private void LoadEncodingsFromFile()
+        {
+            if (!File.Exists(_encodingsFilePath)) return;
+
+            var json = File.ReadAllText(_encodingsFilePath);
+            var data = JsonSerializer.Deserialize<Dictionary<string, List<float[]>>>(json);
+
+            if (data != null)
+            {
+                foreach (var kvp in data)
+                {
+                    var faceEncodings = kvp.Value.Select(vec => CreateFaceEncoding(vec)).ToList();
+                    _userFaceEncodings[kvp.Key] = faceEncodings;
+                }
+                Console.WriteLine("Loaded face encodings from file.");
+            }
+        }
+        private FaceEncoding CreateFaceEncoding(float[] data)
+        {
+            var doubles = data.Select(f => (double)f).ToArray();
+
+            using var matrix = new DlibDotNet.Matrix<double>(1, doubles.Length);
+
+            for (int i = 0; i < doubles.Length; i++)
+            {
+                matrix[0, i] = doubles[i];
+            }
+
+            var constructor = typeof(FaceEncoding)
+                .GetConstructors(System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                .FirstOrDefault();
+
+            if (constructor == null)
+                throw new InvalidOperationException("Không tìm thấy constructor của FaceEncoding!");
+
+            // Constructor nhận Matrix<double>
+            var encoding = constructor.Invoke(new object[] { matrix }) as FaceEncoding;
+
+            return encoding;
+        }
+
+
+
     }
 }

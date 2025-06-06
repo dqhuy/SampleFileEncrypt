@@ -1,31 +1,58 @@
-@{
+﻿@{
 
-	Layout = "~/Views/Shared/_Layout.cshtml";
+    Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
 @model List<PDFManagementApp.Models.ApplicationUser>
-	<div class="bg-white p-6 rounded-lg shadow-md">
-		<h2 class="text-2xl font-bold mb-4">Manage Users</h2>
-		<table class="w-full border-collapse">
-			<thead>
-				<tr class="bg-gray-200">
-					<th class="p-2">Username</th>
-					<th class="p-2">Actions</th>
-				</tr>
-			</thead>
-			<tbody>
-				@foreach (var user in Model)
-				{
-				<tr>
-					<td class="p-2 border">@user.Username</td>
-					<td class="p-2 border">
-						<a href="/Account/Edit/@user.Id" class="text-blue-600">Edit</a>
-						<form method="post" action="/Account/Delete/@user.Id" class="inline">
-							<button type="submit" class="text-red-600">Delete</button>
-						</form>
-					</td>
-				</tr>
-				}
-			</tbody>
-		</table>
-	</div>
+<div class="bg-white p-6 rounded-lg shadow-md">
+    <div class="flex justify-between items-center mb-4">
+        <h2 class="text-2xl font-bold mb-4 text-blue-600 flex items-center gap-2">
+            <i class="fas fa-folder-open"></i>
+            Quản lý người dùng
+        </h2>
+        <a href="/Account/Edit/0"
+           class="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded shadow transition">
+            <i class="fas fa-plus"></i>
+            Thêm người dùng mới
+        </a>
+    </div>
+    <table class="w-full border-collapse">
+        <thead>
+            <tr class="bg-gray-200 text-gray-700">
+                <th class="p-3 text-left">STT</th>
+                <th class="p-3 text-left">Username</th>
+                <th class="p-3 w-1/5 text-right">Thao tác</th>
+            </tr>
+        </thead>
+        <tbody>
+            @{
+                int stt = 0;
+                foreach (var user in Model)
+                {
+                    stt++;
+                    <tr class="hover:bg-gray-50 transition">
+                        <td class="p-3 border-b">@stt</td>
+                        <td class="p-3 border-b">@user.Username</td>
+                        <td class="p-3 border-b flex items-center gap-2 w-1/5 text-left">
+                            <a href="/Account/Edit/@user.Id"
+                               class="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-1 px-3 rounded shadow transition">
+                                <i class="fas fa-edit"></i>
+                                Edit
+                            </a>
+
+                            <form method="post" action="/Account/Delete/@user.Id" class="inline">
+                                <button type="submit"
+                                        class="flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white font-medium py-1 px-3 rounded shadow transition"
+                                        onclick="return confirm('Are you sure to delete this user?');">
+                                    <i class="fas fa-trash-alt"></i>
+                                    Delete
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
+

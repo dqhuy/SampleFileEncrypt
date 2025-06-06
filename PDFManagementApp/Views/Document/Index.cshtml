@@ -1,38 +1,260 @@
-@{
+﻿@{
 
-	Layout = "~/Views/Shared/_Layout.cshtml";
+    Layout = "~/Views/Shared/_Layout.cshtml";
 }
 @model List<PDFManagementApp.Models.Document>
-	<div class="bg-white p-6 rounded-lg shadow-md">
-		<h2 class="text-2xl font-bold mb-4">Documents</h2>
-		<a href="/Document/Upload" class="bg-blue-600 text-white p-2 rounded mb-4 inline-block">Upload New Document</a>
-		<table class="w-full border-collapse">
-			<thead>
-				<tr class="bg-gray-200">
-					<th class="p-2">File Name</th>
-					<th class="p-2">Size (bytes)</th>
-					<th class="p-2">Upload Date</th>
-					<th class="p-2">Upload by</th>
-					<th class="p-2">Actions</th>
-				</tr>
-			</thead>
-			<tbody>
-				@foreach (var doc in Model)
-				{
-				<tr>
-					<td class="p-2 border">@doc.FileName</td>
-					<td class="p-2 border">@doc.FileSize</td>
-					<td class="p-2 border">@doc.UploadDate</td>
-					<td class="p-2 border">@doc.UploadedBy</td>
-					<td class="p-2 border">
-						<a href="/Document/View/@doc.Id" class="text-blue-600">View</a>
-						<form method="post" action="/Document/Download/@doc.Id" class="inline">
-							<input type="text" name="encryptionKey" placeholder="Enter key" class="p-1 border" required="">
-								<button type="submit" class="text-blue-600">Download</button>
-							</form>
-					</td>
-				</tr>
-				}
-			</tbody>
-		</table>
-	</div>
+@{
+    var actionDownload = (User != null && User.Identity != null && !string.IsNullOrEmpty(User.Identity.Name) && User.Identity.Name.ToLower() == "admin") ? "/Document/Download" : "/Document/DownloadEncryptFile";
+}
+<div class="bg-white p-6 rounded-lg shadow-md">
+    <div class="flex justify-between items-center mb-4">
+        <h2 class="text-2xl font-bold text-blue-600 flex items-center gap-2">
+            <i class="fas fa-folder-open"></i>
+            Tài liệu
+        </h2>
+        <a href="/Document/Upload"
+        class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow transition duration-300">
+            <i class="fas fa-upload"></i>
+            Upload tài liệu mới
+        </a>
+    </div>
+
+    <div class="overflow-x-auto rounded-lg border">
+        <table class="w-full border-collapse">
+            <thead>
+                <tr class="bg-gray-100 text-gray-700">
+                    <th class="p-3 text-left">Tên file</th>
+                    <th class="p-3 text-left">Kích cỡ (bytes)</th>
+                    <th class="p-3 text-left">Ngày Upload</th>
+                    <th class="p-3 text-left">Uploaded bởi</th>
+                    <th class="p-3 text-left">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var doc in Model)
+                {
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="p-3">@doc.FileName</td>
+                        <td class="p-3">@doc.FileSize</td>
+                        <td class="p-3">@doc.UploadDate</td>
+                        <td class="p-3">@doc.UploadedBy</td>
+                        <td class="p-3 flex flex-wrap gap-2 text-center">
+                            @* <form method="post" action="/Document/ViewDetail/@doc.Id" class="flex flex-col gap-4 mb-4">
+                                <div>
+                                    <input type="hidden" name="encryptionKey" value="@ViewBag.EncryptionKey"
+                                           class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+                                </div>
+                                <button type="submit"
+                                        class="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold p-3 rounded shadow transition duration-300 ease-in-out">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </form> *@
+                            <button type="submit" data-encryption-key="@ViewBag.EncryptionKey" data-doc-id="@doc.Id" data-url="/Document/ViewDetail"
+                                    class="faceRecognizeButton flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold p-3 rounded shadow transition duration-300 ease-in-out">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <form method="post" action="@actionDownload/@doc.Id" class="flex items-center gap-2">
+                                <input hidden type="text" name="encryptionKey" placeholder="Enter key" value="@ViewBag.EncryptionKey"
+                                class="p-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 transition" />
+                                <button type="submit"
+                                        class="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold p-3 rounded shadow transition duration-300 ease-in-out">
+                                    <i class="fas fa-download"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    jQuery(document).on("click", ".faceRecognizeButton", function () {
+            var self = $(this);
+            var form = self.closest("form");
+
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(function (stream) {
+                    var $video = $('<video autoplay></video>').css({
+                        width: '100%',
+                        borderRadius: '8px',
+                        marginBottom: '10px'
+                    });
+                    $video[0].srcObject = stream;
+
+                    var $popup = $('<div class="dragover"></div>').addClass('camera-popup')
+                        .css({
+                            overflow: 'hidden',
+                            position: 'fixed',
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            zIndex: '9999',
+                            backgroundColor: '#fff',
+                            padding: '10px',
+                            borderRadius: '8px',
+                            boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
+                            textAlign: 'center',
+                            cursor: 'move'
+                        });
+
+                    var $label = $('<label>Đang nhận dạng vui lòng đợi...</label>').css({
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                    });
+
+                    var $contentWrapper = $('<div></div>').css({
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                    });
+
+                    var $closeButton = $('<button class="btn btn-primary btn-basic">Đóng</button>').css({
+                        fontSize: '16px',
+                        marginTop: '10px'
+                    }).click(function () {
+                        $popup.remove();
+                        stream.getTracks().forEach(track => track.stop());
+                    });
+
+                    // Nhấn esc để đóng popup
+                    $(document).on('keydown', function (e) {
+                        if (e.key === 'Escape') {
+                            $popup.remove();
+                            stream.getTracks().forEach(track => track.stop());
+                            $(document).off('keydown');
+                        }
+                    });
+
+                    // Drag functionality
+                    var isDragging = false;
+                    var offset = { x: 0, y: 0 };
+
+                    $popup.on('mousedown', function (e) {
+                        isDragging = true;
+                        offset.x = e.clientX - $popup.offset().left;
+                        offset.y = e.clientY - $popup.offset().top;
+                        $(document).on('mousemove', onMouseMove);
+                        $(document).on('mouseup', onMouseUp);
+                        e.preventDefault();
+                    });
+
+                    function onMouseMove(e) {
+                        if (isDragging) {
+                            $popup.css({
+                                top: e.clientY - offset.y,
+                                left: e.clientX - offset.x,
+                                transform: 'none'
+                            });
+                        }
+                    }
+
+                    function onMouseUp() {
+                        isDragging = false;
+                        $(document).off('mousemove', onMouseMove);
+                        $(document).off('mouseup', onMouseUp);
+                    }
+
+                    //var $imageList = $('<div class="image-list" style="display: flex; overflow: hidden; margin-top: 10px; margin-bot: 10px justify-content: center;"></div>');
+
+                    //$contentWrapper.append($video).append($imageList).append($closeButton);
+                    $contentWrapper.append($video).append($closeButton);
+                    $popup.append($label).append($contentWrapper);
+
+                    $('body').append($popup);
+                    var sl = 0;
+                    var intervalId = setInterval(function () {
+                        var canvas = document.createElement("canvas");
+                        canvas.width = $video[0].videoWidth;
+                        canvas.height = $video[0].videoHeight;
+                        canvas.getContext("2d").drawImage($video[0], 0, 0, canvas.width, canvas.height);
+
+                        canvas.toBlob(function (blob) {
+                            const overlay = document.getElementById('loadingOverlay');
+                            overlay.classList.remove('hidden');
+
+                            var file = new File([blob], "profile_picture.png", { type: 'image/png' });
+                            var formData = new FormData();
+                            formData.append('file', blob, "profile_picture_" + sl + ".png");
+                            $.ajax({
+                                url: '/Account/SaveTempImage',
+                                type: 'POST',
+                                data: formData,
+                                processData: false,
+                                contentType: false,
+                                success: function (response) {
+                                    var imagePath = response.filePath;
+
+                                    let data = CommonJs.GetSerialize(form);
+                                    let url = self.attr("data-url");
+                                    let docId = self.attr("data-doc-id");
+                                    let encryptionKey = self.attr("data-encryption-key");
+                                    let resUrl = self.attr("data-resurl");
+
+                                    // IpAddress
+                                    data.ipAddress = "";
+                                    // Image for RecognizeFace
+                                    data.authFilePath = imagePath;
+                                    data.UserName = "";
+                                    data.Password = "";
+                                    data.docId = docId;
+                                    data.encryptionKey = encryptionKey;
+
+                                    let dataType = "json";
+                                    let ssCallBack = function (res) {
+                                        if (res.redirectUrl) {
+                                            window.location.href = res.redirectUrl;
+                                            return false;
+                                        }
+                                        if (res.success) {
+                                            if (res.data === null || res.data === false) {
+                                                $(".faceRecognizeButton").prop({ disabled: false });
+                                                res.success = false;
+                                                CommonJs.SetMessage(res, true, true);
+                                            } else {
+                                                window.location = resUrl;
+                                                CommonJs.SetMessage(res, true, resUrl);
+                                            }
+                                        } else if (res.type === "Redirect") { //type là redirect
+                                            window.location.href = res.message;
+                                        } else { // thất bại
+                                            $(".faceRecognizeButton").prop({ disabled: false });
+                                            CommonJs.SetMessage(res, true, resUrl);
+                                        }
+                                    }
+                                    //todo : handle with errCallback
+                                    let errCallback = function () {
+                                        $(".faceRecognizeButton").prop({ disabled: false });
+                                        return false;
+                                    }
+
+                                    CommonJs.CustAjaxCall(data, "POST", url, dataType, ssCallBack, errCallback);
+                                    return false;
+                                },
+                                error: function (xhr, status, error) {
+                                    console.error("Lỗi khi tải lên hình ảnh:", error);
+                                },
+                                finally: function (){
+                                    overlay.classList.add('hidden');
+                                }
+                            });
+                        }, 'image/png');
+
+                        sl++;
+
+                        if (sl == 1) {
+                            $popup.remove();
+                            stream.getTracks().forEach(track => track.stop());
+                            clearInterval(intervalId);
+                        }
+                    }, 3000);
+                })
+                .catch(function (error) {
+                    console.error("Không thể truy cập vào camera:", error);
+                    CommonJs.SetMessage("Không thể truy cập vào camera.", true);
+
+                });
+        });
+</script>

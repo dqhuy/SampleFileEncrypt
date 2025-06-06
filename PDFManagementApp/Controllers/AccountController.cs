@@ -1,5 +1,4 @@
-﻿using Ce.Constant.Lib.Definitions;
-using Microsoft.AspNetCore.Authentication;
+﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -7,30 +6,40 @@ using Newtonsoft.Json;
 using PDFManagementApp.Dto;
 using PDFManagementApp.Models;
 using PDFManagementApp.Services;
+using PDFManagementApp.Services.Interface;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
+using System.IO;
+using Ce.Common.Lib.Abstractions;
+using Ce.Constant.Lib.Dtos;
+using Nest;
 
 namespace PDFManagementApp.Controllers
 {
     public class AccountController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly IFaceAuthenticatorClientService _faceAuthenticatorClientService;
         private readonly IConfiguration _configuration;
-        private readonly string _folderFaceUserDataBase;
-        private readonly string _serverAddressFaceAuthenticator;
-        private readonly string _axAPIWrapperDomain;
+        private readonly string _faceRecognizeAPIWrapperDomain;
 
-        public AccountController(ApplicationDbContext context, IConfiguration configuration)
+        public AccountController(ApplicationDbContext context, IConfiguration configuration, IFaceAuthenticatorClientService faceAuthenticatorClientService)
         {
             _context = context;
+            _faceAuthenticatorClientService = faceAuthenticatorClientService;
             _configuration = configuration;
-            _folderFaceUserDataBase = configuration.GetConnectionString("FolderFaceUserDataBase") ?? "";
-            _serverAddressFaceAuthenticator = configuration.GetConnectionString("ServerAddressFaceAuthenticator") ?? "";
-            _axAPIWrapperDomain = configuration.GetConnectionString("AXAPIWrapperDomain") ?? "";
+            _faceRecognizeAPIWrapperDomain = configuration.GetConnectionString("FaceRecognizeAPIDomain") ?? "";
+        }
+        protected virtual IActionResult ResponseResult(GenericResponse result)
+        {
+            return new JsonResult(result);
         }
 
+        protected virtual IActionResult ResponseResult<T>(GenericResponse<T> result)
+        {
+            return new JsonResult(result);
+        }
         [HttpGet]
         public IActionResult Login()
         {
@@ -50,7 +59,7 @@ namespace PDFManagementApp.Controllers
                 await HttpContext.SignInAsync("CookieAuth", claims);
                 return RedirectToAction("Index", "Document");
             }
-            ViewBag.Error = "Invalid credentials";
+            ViewBag.Error = "Tài khoản hoặc mật khẩu không đúng.";
             return View();
         }
 
@@ -58,56 +67,58 @@ namespace PDFManagementApp.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> LoginWithFace(UserLoginDto model)
         {
+            var result = new GenericResponse<int>();
             if (string.IsNullOrEmpty(model.AuthFilePath))
             {
-                return BadRequest("Không có thông tin ảnh. Hãy xác thực lại.");
+                return new JsonResult(GenericResponse<int>.ResultWithError(message: "Không có thông tin ảnh. Hãy xác thực lại."));
             }
-            var userRecognize = new GenericResponse<string>();
-            //var userRecognize = await _faceAuthenticatorClientService.RecognizeFace(_axAPIWrapperDomain, model.AuthFilePath);
+            var userRecognize = await _faceAuthenticatorClientService.RecognizeFace(_faceRecognizeAPIWrapperDomain, model.AuthFilePath);
             if (!userRecognize.Success || userRecognize.Data == null)
             {
-                return BadRequest(userRecognize.Message);
+                return new JsonResult(GenericResponse<int>.ResultWithError(message: userRecognize.Message));
             }
-            var lstFaceInfors = JsonConvert.DeserializeObject<List<FacesData>>(userRecognize.Data.ToString());
+            var faceInfor = userRecognize.Data;
 
-            var faceInfors = new FacesData();
-
-            if (lstFaceInfors != null)
+            if (faceInfor != null)
             {
-                faceInfors = lstFaceInfors[0];
-            }
-            else
-            {
-                return BadRequest("Không có thông tin người dùng vui lòng thử lại.");
-            }
-
-            if (faceInfors == null || faceInfors.Faces.Count == 0)
-            {
-                return BadRequest("Không có thông tin người dùng vui lòng thử lại.");
-            }
-
-            if (string.IsNullOrEmpty(model.IpAddress))
-            {
-                model.IpAddress = "Unknown";
-            }
-            foreach (var faceInfor in faceInfors.Faces)
-            {
-                if (faceInfor.Similarity >= 0.5)
+                if (faceInfor.Confidence >= 0.5)
                 {
-                    var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == faceInfor.Name);
+                    var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == faceInfor.UserId); 
                     if (user != null)
                     {
                         var claims = new System.Security.Claims.ClaimsPrincipal(
                             new System.Security.Claims.ClaimsIdentity(
-                                new[] { new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, model.UserName) },
+                                new[] { new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, user.Username) },
                                 "CookieAuth"));
                         await HttpContext.SignInAsync("CookieAuth", claims);
-                        return RedirectToAction("Index", "Document");
+                        //return RedirectToAction("Index", "Document");
+                        return new JsonResult(new
+                        {
+                            redirectUrl = "/Document"
+                        });
                     }
                 }
+                else
+                {
+                    return new JsonResult(GenericResponse<int>.ResultWithError(message: "Độ tin cậy không đạt"));
+                }
             }
-            ViewBag.Error = "Invalid credentials";
-            return View();
+            else
+            {
+                return new JsonResult(GenericResponse<int>.ResultWithError(message: "Không có thông tin người dùng vui lòng thử lại."));
+            }
+            return new JsonResult(GenericResponse<int>.ResultWithError(message: "Xác thực không thành công."));
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> FaceTrain()
+        {
+            var result = await _faceAuthenticatorClientService.FaceTrain(_faceRecognizeAPIWrapperDomain);
+            if (!result.Success || result.Data == null)
+            {
+                return new JsonResult(GenericResponse<int>.ResultWithError(message: result.Message));
+            }
+            return ResponseResult(result);
         }
 
         [HttpPost]
@@ -139,6 +150,36 @@ namespace PDFManagementApp.Controllers
             return Ok(new { filePath });
         }
 
+        [HttpPost]
+        public async Task<IActionResult> RegisterImageForFaceRecogize([FromForm] RegisterImageFaceRecogizeDto model)
+        {
+            if (model.File == null || model.File.Length == 0)
+                return BadRequest("Không có file được tải lên.");
+            var permittedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
+            var ext = Path.GetExtension(model.File.FileName).ToLowerInvariant();
+            if (string.IsNullOrEmpty(ext) || !permittedExtensions.Contains(ext))
+            {
+                return BadRequest("Định dạng file không hợp lệ.");
+            }
+            var currentRoot = Directory.GetParent(Directory.GetCurrentDirectory()).FullName;
+            var folderPath = Path.Combine(currentRoot, "FaceRecognition", "images", model.UserName);
+
+            if (!Directory.Exists(folderPath))
+            {
+                Directory.CreateDirectory(folderPath);
+            }
+
+            var fileName = Guid.NewGuid().ToString() + Path.GetExtension(model.File.FileName);
+            var filePath = Path.Combine(folderPath, fileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await model.File.CopyToAsync(stream);
+            }
+
+            return Ok(new { filePath });
+        }
+
         [HttpGet]
         public IActionResult Register()
         {
@@ -167,6 +208,20 @@ namespace PDFManagementApp.Controllers
         }
 
         [HttpPost]
+        public async Task<IActionResult> Create(string username, string password, string encryptionKey)
+        {
+            var user = new ApplicationUser
+            {
+                Username = username,
+                PasswordHash = HashPassword(password),
+                EncryptionKey = encryptionKey
+            };
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+            return RedirectToAction("Manage");
+        }
+
+        [HttpPost]
         public async Task<IActionResult> Delete(int id)
         {
             var user = await _context.Users.FindAsync(id);
@@ -181,7 +236,12 @@ namespace PDFManagementApp.Controllers
         [HttpGet]
         public IActionResult Edit(int id)
         {
-            var user = _context.Users.Find(id);
+            var user = new ApplicationUser();
+            if (id <= 0)
+            {
+                return View(user);
+            }
+            user = _context.Users.Find(id);
             return View(user);
         }
 
