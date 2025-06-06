@@ -1,0 +1,232 @@
+﻿@{
+
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@model dynamic
+<div class="max-w-md mx-auto bg-white p-6 rounded-lg shadow-md">
+    <h2 class="text-2xl font-bold mb-4">Login</h2>
+    @if (ViewBag.Error != null)
+    {
+        <div class="text-red-500 mb-4">@ViewBag.Error</div>
+    }
+    <form method="post" action="/Account/Login">
+        <div class="mb-4">
+            <label class="block text-gray-700">Username</label>
+            <input type="text" name="username" class="w-full p-2 border rounded" required />
+        </div>
+        <div class="mb-4">
+            <label class="block text-gray-700">Password</label>
+            <input type="password" name="password" class="w-full p-2 border rounded" required />
+        </div>
+
+        <div class="flex flex-col gap-2">
+            <button type="submit"
+                    class="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-lg shadow transition duration-300 ease-in-out">
+                Login
+            </button>
+
+            <button type="button" id="faceLoginButton" data-url="/Account/LoginWithFace"
+                    class="faceLoginButton flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white p-3 rounded-lg shadow transition duration-300 ease-in-out">
+                <img class="icon" width="24" src="~/faceid.png" alt="FaceID" />
+                Login with face
+            </button>
+        </div>
+    </form>
+
+</div>
+<script>
+    jQuery(document).on("click", ".faceLoginButton", function () {
+            var self = $(this);
+            var form = self.closest("form");
+
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(function (stream) {
+                    var $video = $('<video autoplay></video>').css({
+                        width: '100%',
+                        borderRadius: '8px',
+                        marginBottom: '10px'
+                    });
+                    $video[0].srcObject = stream;
+
+                    var $popup = $('<div class="dragover"></div>').addClass('camera-popup')
+                        .css({
+                            overflow: 'hidden',
+                            position: 'fixed',
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            zIndex: '9999',
+                            backgroundColor: '#fff',
+                            padding: '10px',
+                            borderRadius: '8px',
+                            boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
+                            textAlign: 'center',
+                            cursor: 'move'
+                        });
+
+                    var $label = $('<label>Đang nhận dạng vui lòng đợi...</label>').css({
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                    });
+
+                    var $contentWrapper = $('<div></div>').css({
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                    });
+
+                    var $closeButton = $('<button class="btn btn-primary btn-basic">Đóng</button>').css({
+                        fontSize: '16px',
+                        marginTop: '10px'
+                    }).click(function () {
+                        $popup.remove();
+                        stream.getTracks().forEach(track => track.stop());
+                    });
+
+                    // Nhấn esc để đóng popup
+                    $(document).on('keydown', function (e) {
+                        if (e.key === 'Escape') {
+                            $popup.remove();
+                            stream.getTracks().forEach(track => track.stop());
+                            $(document).off('keydown');
+                        }
+                    });
+
+                    // Drag functionality
+                    var isDragging = false;
+                    var offset = { x: 0, y: 0 };
+
+                    $popup.on('mousedown', function (e) {
+                        isDragging = true;
+                        offset.x = e.clientX - $popup.offset().left;
+                        offset.y = e.clientY - $popup.offset().top;
+                        $(document).on('mousemove', onMouseMove);
+                        $(document).on('mouseup', onMouseUp);
+                        e.preventDefault();
+                    });
+
+                    function onMouseMove(e) {
+                        if (isDragging) {
+                            $popup.css({
+                                top: e.clientY - offset.y,
+                                left: e.clientX - offset.x,
+                                transform: 'none'
+                            });
+                        }
+                    }
+
+                    function onMouseUp() {
+                        isDragging = false;
+                        $(document).off('mousemove', onMouseMove);
+                        $(document).off('mouseup', onMouseUp);
+                    }
+
+                    //var $imageList = $('<div class="image-list" style="display: flex; overflow: hidden; margin-top: 10px; margin-bot: 10px justify-content: center;"></div>');
+
+                    //$contentWrapper.append($video).append($imageList).append($closeButton);
+                    $contentWrapper.append($video).append($closeButton);
+                    $popup.append($label).append($contentWrapper);
+
+                    $('body').append($popup);
+                    var sl = 0;
+                    var intervalId = setInterval(function () {
+                        var canvas = document.createElement("canvas");
+                        canvas.width = $video[0].videoWidth;
+                        canvas.height = $video[0].videoHeight;
+                        canvas.getContext("2d").drawImage($video[0], 0, 0, canvas.width, canvas.height);
+
+                        canvas.toBlob(function (blob) {
+                            var file = new File([blob], "profile_picture.png", { type: 'image/png' });
+                            var formData = new FormData();
+                            formData.append('file', blob, "profile_picture_" + sl + ".png");
+                            //var $img = $('<img>').attr('src', URL.createObjectURL(file)).css({
+                            //    width: '100px',
+                            //    height: '80px',
+                            //    marginBottom: '10px',
+                            //    marginRight: '5px',
+                            //    borderRadius: '8px'
+                            //});
+                            //$imageList.prepend($img);
+                            $.ajax({
+                                url: 'SaveTempImage',
+                                type: 'POST',
+                                data: formData,
+                                processData: false,
+                                contentType: false,
+                                success: function (response) {
+                                    var imagePath = response.filePath;
+
+                                    //var $img = $('<img>').attr('src', imagePath).css({
+                                    //    width: '100px',
+                                    //    height: '80px',
+                                    //    marginBottom: '10px',
+                                    //    marginRight: '5px',
+                                    //    borderRadius: '8px'
+                                    //});
+                                    //$imageList.prepend($img);
+
+                                    let data = CommonJs.GetSerialize(form); //trimspace
+                                    let url = self.attr("data-url");
+                                    let resUrl = self.attr("data-resurl");
+
+                                    // IpAddress
+                                    data.ipAddress = jQuery('#ip-address').val();
+                                    // Image for RecognizeFace
+                                    data.authFilePath = imagePath;
+                                    data.UserName = "fixed";
+                                    data.Password = "fixed!123456";
+
+                                    let dataType = "json";
+                                    let ssCallBack = function (res) {
+                                        if (res.redirectUrl) {
+                                            window.location.href = res.redirectUrl;
+                                            return false;
+                                        }
+                                        if (res.success) {
+                                            if (res.data === null || res.data === false) {
+                                                $(".faceLoginButton").prop({ disabled: false });
+                                                res.success = false;
+                                                CommonJs.SetMessage(res, true, true);
+                                            } else {
+                                                window.location = resUrl;
+                                                CommonJs.SetMessage(res, true, resUrl);
+                                            }
+                                        } else if (res.type === "Redirect") { //type là redirect
+                                            window.location.href = res.message;
+                                        } else { // thất bại
+                                            $(".faceLoginButton").prop({ disabled: false });
+                                            CommonJs.SetMessage(res, true, resUrl);
+                                        }
+                                    }
+                                    //todo : handle with errCallback
+                                    let errCallback = function () {
+                                        $(".faceLoginButton").prop({ disabled: false });
+                                        return false;
+                                    }
+
+                                    CommonJs.CustAjaxCall(data, "POST", url, dataType, ssCallBack, errCallback);
+                                    return false;
+                                },
+                                error: function (xhr, status, error) {
+                                    console.error("Lỗi khi tải lên hình ảnh:", error);
+                                }
+                            });
+                        }, 'image/png');
+
+                        sl++;
+
+                        if (sl == 1) {
+                            $popup.remove();
+                            stream.getTracks().forEach(track => track.stop());
+                            clearInterval(intervalId);
+                        }
+                    }, 5000);
+                })
+                .catch(function (error) {
+                    console.error("Không thể truy cập vào camera:", error);
+                    CommonJs.SetMessage("Không thể truy cập vào camera.", true);
+
+                });
+        });
+</script>
