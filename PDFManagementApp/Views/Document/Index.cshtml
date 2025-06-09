@@ -26,7 +26,9 @@
                     <th class="p-3 text-left">Tên file</th>
                     <th class="p-3 text-left">Kích cỡ (bytes)</th>
                     <th class="p-3 text-left">Ngày Upload</th>
-                    <th class="p-3 text-left">Uploaded bởi</th>
+                    <th class="p-3 text-left">Người upload</th>
+                    <th class="p-3 text-left">Loại tài liệu</th>
+
                     <th class="p-3 text-left">Thao tác</th>
                 </tr>
             </thead>
@@ -38,6 +40,16 @@
                         <td class="p-3">@doc.FileSize</td>
                         <td class="p-3">@doc.UploadDate</td>
                         <td class="p-3">@doc.UploadedBy</td>
+                        <td class="p-3">@if (doc.IsEncrypted)
+                            {
+                                <span class="text-red-500">Tài liệu mật</span>
+                            }
+                            else
+                            {
+                                <span class=""></span>
+                            }
+
+                        </td>
                         <td class="p-3 flex flex-wrap gap-2 text-center">
                             @* <form method="post" action="/Document/ViewDetail/@doc.Id" class="flex flex-col gap-4 mb-4">
                                 <div>

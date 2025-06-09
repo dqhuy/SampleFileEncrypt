@@ -39,6 +39,9 @@ namespace PDFManagementApp
             services.AddHttpClient<IBaseHttpClient, BaseHttpClient>();
             services.AddSingleton<IBaseHttpClientFactory, BaseHttpClientFactory>();
             services.AddSingleton<IFaceAuthenticatorClientService, FaceAuthenticatorClientService>();
+
+            services.Configure<AppInfo>(Configuration.GetSection("AppInfo"));
+
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -65,6 +68,8 @@ namespace PDFManagementApp
                     name: "default",
                     pattern: "{controller=Home}/{action=Index}/{id?}");
             });
+
+
         }
     }
 }

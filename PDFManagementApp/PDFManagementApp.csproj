@@ -33,4 +33,10 @@
     <ProjectReference Include="..\FaceRecognition\FaceRecognition.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Update="wwwroot\logo\logoAXE-white.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>

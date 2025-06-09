@@ -10,5 +10,6 @@ namespace PDFManagementApp.Models
         public DateTime UploadDate { get; set; }
         public string UploadedBy { get; set; }
         public string FilePath { get; set; }
+        public bool IsEncrypted { get; set; } = true;
     }
 }
