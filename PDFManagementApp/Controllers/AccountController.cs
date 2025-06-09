@@ -30,6 +30,9 @@ namespace PDFManagementApp.Controllers
             _faceAuthenticatorClientService = faceAuthenticatorClientService;
             _configuration = configuration;
             _faceRecognizeAPIWrapperDomain = configuration.GetConnectionString("FaceRecognizeAPIDomain") ?? "";
+            //_faceRecognizeAPIWrapperDomain = Environment.GetEnvironmentVariable("FaceRecognizeAPIDomain")
+            //    ?? configuration.GetConnectionString("FaceRecognizeAPIDomain");
+
         }
         protected virtual IActionResult ResponseResult(GenericResponse result)
         {
