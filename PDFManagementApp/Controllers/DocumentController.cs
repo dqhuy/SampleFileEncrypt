@@ -170,16 +170,26 @@ namespace PDFManagementApp.Controllers
                 {
                     var document = await _context.Documents.FindAsync(model.docId);
                     var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == User.Identity.Name);
-                    if (document == null || document.UploadedBy != User.Identity.Name || user.EncryptionKey != model.encryptionKey || user.Username.ToLower() != faceInfor.UserId.ToLower())
+                    if (user != null && user.EncryptionKey != null && (document == null || document.UploadedBy != User.Identity.Name))
+                    {
+                        return new JsonResult(GenericResponse<int>.ResultWithError(message: "Bạn không phải người upload. vui lòng thử lại sau!"));
+                    }
+                    else if (user != null && user.EncryptionKey != null && (user.EncryptionKey != model.encryptionKey || user.Username.ToLower() != faceInfor.UserId.ToLower()))
                     {
                         return new JsonResult(GenericResponse<int>.ResultWithError(message: "Khuôn mặt không khớp với tài khoản. vui lòng thử lại!"));
                     }
                     else
                     {
+                        var encryptedData = await System.IO.File.ReadAllBytesAsync(document.FilePath);
+                        var decryptedData = _encryptionService.DecryptFile(encryptedData, user.EncryptionKey);
+
+                        string filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "tmp", document.FileName);
+                        System.IO.File.WriteAllBytes(filePath, decryptedData);
+
                         return new JsonResult(new
                         {
                             redirectUrl = $"/lib/PdfJS/web/viewer.html?file=/tmp/{document.FileName}"
-                    });
+                        });
                     }  
                 }
                 else
