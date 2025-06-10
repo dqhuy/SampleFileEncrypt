@@ -25,7 +25,6 @@
   <ItemGroup>
     <Folder Include="database\" />
     <Folder Include="Migrations\" />
-    <Folder Include="wwwroot\tmp\" />
     <Folder Include="wwwroot\uploads\faceAuthPictures\" />
   </ItemGroup>
 

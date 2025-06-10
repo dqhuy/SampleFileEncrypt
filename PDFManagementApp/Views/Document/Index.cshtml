@@ -4,7 +4,7 @@
 }
 @model List<PDFManagementApp.Models.Document>
 @{
-    var actionDownload = (User != null && User.Identity != null && !string.IsNullOrEmpty(User.Identity.Name) && User.Identity.Name.ToLower() == "admin") ? "/Document/Download" : "/Document/DownloadEncryptFile";
+    var actionDownload = "/Document/DownloadEncryptedFile"; //
 }
 <div class="bg-white p-6 rounded-lg shadow-md">
     <div class="flex justify-between items-center mb-4">
@@ -13,7 +13,7 @@
             Tài liệu
         </h2>
         <a href="/Document/Upload"
-        class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow transition duration-300">
+           class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow transition duration-300">
             <i class="fas fa-upload"></i>
             Upload tài liệu mới
         </a>
@@ -40,7 +40,8 @@
                         <td class="p-3">@doc.FileSize</td>
                         <td class="p-3">@doc.UploadDate</td>
                         <td class="p-3">@doc.UploadedBy</td>
-                        <td class="p-3">@if (doc.IsEncrypted)
+                        <td class="p-3">
+                            @if (doc.IsEncrypted)
                             {
                                 <span class="text-red-500">Tài liệu mật</span>
                             }
@@ -61,13 +62,26 @@
                                     <i class="fas fa-eye"></i>
                                 </button>
                             </form> *@
-                            <button type="submit" data-encryption-key="@ViewBag.EncryptionKey" data-doc-id="@doc.Id" data-url="/Document/ViewDetail"
-                                    class="faceRecognizeButton flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold p-3 rounded shadow transition duration-300 ease-in-out">
-                                <i class="fas fa-eye"></i>
-                            </button>
+                            @if (doc.IsEncrypted)
+                            {
+                                <button type="submit" data-encryption-key="@ViewBag.EncryptionKey" data-doc-id="@doc.Id" data-url="/Document/ViewDetail" formtarget="_blank"
+                                        class="faceRecognizeButton flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold p-3 rounded shadow transition duration-300 ease-in-out">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            }
+                            else
+                            {
+                                <form method="post" action="/Document/View/@doc.Id" class="flex items-center gap-2">
+                                    <button type="submit"
+                                            class="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold p-3 rounded shadow transition duration-300 ease-in-out">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </form>
+
+                            }
                             <form method="post" action="@actionDownload/@doc.Id" class="flex items-center gap-2">
                                 <input hidden type="text" name="encryptionKey" placeholder="Enter key" value="@ViewBag.EncryptionKey"
-                                class="p-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 transition" />
+                                       class="p-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 transition" />
                                 <button type="submit"
                                         class="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold p-3 rounded shadow transition duration-300 ease-in-out">
                                     <i class="fas fa-download"></i>

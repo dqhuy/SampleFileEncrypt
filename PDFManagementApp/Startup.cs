@@ -23,6 +23,12 @@ namespace PDFManagementApp
 
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddSession(options =>
+            {
+                options.IdleTimeout = TimeSpan.FromMinutes(30);
+                options.Cookie.HttpOnly = true;
+                options.Cookie.IsEssential = true;
+            });
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlite(Configuration.GetConnectionString("DefaultConnection")));
 
@@ -61,6 +67,7 @@ namespace PDFManagementApp
             app.UseRouting();
             app.UseAuthentication();
             app.UseAuthorization();
+            app.UseSession();
 
             app.UseEndpoints(endpoints =>
             {

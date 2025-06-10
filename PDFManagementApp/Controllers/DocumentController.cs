@@ -1,4 +1,5 @@
 ﻿using Ce.Constant.Lib.Dtos;
+using DocumentFormat.OpenXml.Spreadsheet;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -42,8 +43,7 @@ namespace PDFManagementApp.Controllers
             {
                 ViewBag.EncryptionKey = userData.EncryptionKey;
             }
-            var documents = await _context.Documents
-              //  .Where(d => d.UploadedBy == user)
+            var documents = await _context.Documents.OrderByDescending(d => d.UploadDate)
                 .ToListAsync();
             return View(documents);
         }
@@ -61,7 +61,7 @@ namespace PDFManagementApp.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Upload(IFormFile file, string encryptionKey)
+        public async Task<IActionResult> Upload(IFormFile file, string encryptionKey,bool isEncrypted)
         {
             if (file != null && file.ContentType == "application/pdf")
             {
@@ -72,8 +72,16 @@ namespace PDFManagementApp.Controllers
                 using (var ms = new MemoryStream())
                 {
                     await file.CopyToAsync(ms);
-                    var encryptedData = _encryptionService.EncryptFile(ms.ToArray(), encryptionKey);
-                    await System.IO.File.WriteAllBytesAsync(filePath, encryptedData);
+                    byte[] fileData;
+                    if (isEncrypted)
+                    {
+                        fileData = _encryptionService.EncryptFile(ms.ToArray(), encryptionKey);
+                    }
+                    else
+                    {
+                        fileData = ms.ToArray(); // Save original file
+                    }
+                    await System.IO.File.WriteAllBytesAsync(filePath, fileData);
                 }
 
                 var document = new Document
@@ -82,7 +90,8 @@ namespace PDFManagementApp.Controllers
                     FileSize = file.Length,
                     UploadDate = DateTime.Now,
                     UploadedBy = User.Identity.Name,
-                    FilePath = filePath
+                    FilePath = filePath,
+                    IsEncrypted = isEncrypted
                 };
                 _context.Documents.Add(document);
                 await _context.SaveChangesAsync();
@@ -92,62 +101,56 @@ namespace PDFManagementApp.Controllers
             return View();
         }
 
-        [HttpGet]
+
+        [HttpPost,HttpGet]
         public async Task<IActionResult> View(int id)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == User.Identity.Name);
-            if (user != null)
-            {
-                ViewBag.EncryptionKey = user.EncryptionKey;
-            }
             var document = await _context.Documents.FindAsync(id);
-            //if (document == null || document.UploadedBy != User.Identity.Name)
-            if (document == null)
-                    return NotFound();
-            return View(document);
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> View(int id, string encryptionKey)
-        {
-            var document = await _context.Documents.FindAsync(id);
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == User.Identity.Name);
-            if (document == null || document.UploadedBy != User.Identity.Name || user.EncryptionKey != encryptionKey)
+            
+            if (document == null )
             {
-                ViewBag.Error = "Invalid encryption key or document not found";
+                ViewBag.Error = "Document not found";
                 return View(document);
             }
 
-            var encryptedData = await System.IO.File.ReadAllBytesAsync(document.FilePath);
-            var decryptedData = _encryptionService.DecryptFile(encryptedData, encryptionKey);
+            var fileData = await System.IO.File.ReadAllBytesAsync(document.FilePath);
 
             // Trả về base64 để View xử lý
-            string base64Pdf = Convert.ToBase64String(decryptedData);
+            string base64Pdf = Convert.ToBase64String(fileData);
 
             ViewBag.PdfBase64 = base64Pdf;
             return View(document);
         }
 
-        [HttpPost]
-        public async Task<IActionResult> ViewDetail_Old(int id, string encryptionKey)
+        [HttpGet]
+        public async Task<IActionResult> ViewEncryptedDoc(int id, string key)
         {
             var document = await _context.Documents.FindAsync(id);
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == User.Identity.Name);
-            if (document == null || document.UploadedBy != User.Identity.Name || user.EncryptionKey != encryptionKey)
+            if (document == null)
             {
-                ViewBag.Error = "Invalid encryption key or document not found";
-                return RedirectToAction("Document");
+                ViewBag.Error = "Document not found";
+                return View("View", document);
+            }
+
+            // Get session ID (ensure session is enabled in Startup)
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == User.Identity.Name);
+
+            var expectedKey = GenerateSessionSecureKey(user.Id.ToString(), id);
+
+            if (key != expectedKey)
+            {
+                ViewBag.Error = "Invalid or expired secure key.";
+                return View("View", document);
             }
 
             var encryptedData = await System.IO.File.ReadAllBytesAsync(document.FilePath);
-            var decryptedData = _encryptionService.DecryptFile(encryptedData, encryptionKey);
+            var decryptedData = _encryptionService.DecryptFile(encryptedData, user.EncryptionKey);
 
-            string filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "tmp", document.FileName);
-            System.IO.File.WriteAllBytes(filePath, decryptedData);
-
-            string viewerUrl = $"/lib/PdfJS/web/viewer.html?file=/tmp/{document.FileName}";
-            return Redirect(viewerUrl);
+            string base64Pdf = Convert.ToBase64String(decryptedData);
+            ViewBag.PdfBase64 = base64Pdf;
+            return View("View", document);
         }
+
 
         [HttpPost]
         public async Task<IActionResult> ViewDetail(UserLoginDto model)
@@ -158,6 +161,7 @@ namespace PDFManagementApp.Controllers
                 return new JsonResult(GenericResponse<int>.ResultWithError(message: "Không có thông tin ảnh. Hãy xác thực lại."));
             }
             var userRecognize = await _faceAuthenticatorClientService.RecognizeFace(_faceRecognizeAPIWrapperDomain, model.AuthFilePath);
+           
             if (!userRecognize.Success || userRecognize.Data == null)
             {
                 return new JsonResult(GenericResponse<int>.ResultWithError(message: userRecognize.Message));
@@ -166,13 +170,13 @@ namespace PDFManagementApp.Controllers
 
             if (faceInfor != null)
             {
-                if (faceInfor.Confidence >= 0.5)
+                if (faceInfor.Confidence >= 0.7)
                 {
                     var document = await _context.Documents.FindAsync(model.docId);
                     var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == User.Identity.Name);
                     if (user != null && user.EncryptionKey != null && (document == null || document.UploadedBy != User.Identity.Name))
                     {
-                        return new JsonResult(GenericResponse<int>.ResultWithError(message: "Bạn không phải người upload. vui lòng thử lại sau!"));
+                        return new JsonResult(GenericResponse<int>.ResultWithError(message: "Bạn không có quyền xem file này!"));
                     }
                     else if (user != null && user.EncryptionKey != null && (user.EncryptionKey != model.encryptionKey || user.Username.ToLower() != faceInfor.UserId.ToLower()))
                     {
@@ -185,16 +189,15 @@ namespace PDFManagementApp.Controllers
 
                         string filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "tmp", document.FileName);
                         System.IO.File.WriteAllBytes(filePath, decryptedData);
-
-                        return new JsonResult(new
-                        {
-                            redirectUrl = $"/lib/PdfJS/web/viewer.html?file=/tmp/{document.FileName}"
-                        });
+                        var secureKey = GenerateSessionSecureKey(user.Id.ToString(), model.docId);
+                        var redirectUrl = Url.Action("ViewEncryptedDoc", "Document", new { id = model.docId,key =secureKey  });
+                        return Json(new { redirectUrl });
+                       
                     }  
                 }
                 else
                 {
-                    return new JsonResult(GenericResponse<int>.ResultWithError(message: "Độ tin cậy không đạt"));
+                    return new JsonResult(GenericResponse<int>.ResultWithError(message: "Xác thực không thành công"));
                 }
             }
             else
@@ -204,7 +207,7 @@ namespace PDFManagementApp.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> DownloadEncryptFile(int id)
+        public async Task<IActionResult> DownloadEncryptedFile(int id)
         {
             var document = await _context.Documents.FindAsync(id);
             var encryptedData = await System.IO.File.ReadAllBytesAsync(document.FilePath);
@@ -225,5 +228,20 @@ namespace PDFManagementApp.Controllers
             var decryptedData = _encryptionService.DecryptFile(encryptedData, user.EncryptionKey);
             return File(decryptedData, "application/pdf", document.FileName);
         }
+
+        private string GenerateSessionSecureKey(string sessionId, int docId, int windowMinutes = 5)
+        {
+            var now = DateTime.UtcNow;
+            // Use a time window (e.g., every 5 minutes)
+            var window = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute / windowMinutes * windowMinutes, 0);
+            var raw = $"{sessionId}:{docId}:{window:yyyyMMddHHmm}";
+            using (var sha256 = System.Security.Cryptography.SHA256.Create())
+            {
+                var bytes = System.Text.Encoding.UTF8.GetBytes(raw);
+                var hash = sha256.ComputeHash(bytes);
+                return Convert.ToBase64String(hash);
+            }
+        }
+
     }
 }
